@@ -1,0 +1,14 @@
+{
+  "name": "Install Dependency Skill",
+  "description": "Example VS Code custom agent skill that follows the steps in install-dependency/SKILL.md and performs dependency installation.",
+  "entrypoint": "install-dependency/SKILL.md",
+  "instructions": "Read the referenced SKILL.md, create a branch named 'agent/<short-task>', apply file edits, run the recommended terminal commands, and open a pull request.",
+  "allowedActions": ["editFiles", "runTerminal", "createBranch"],
+  "placeholders": {
+    "package": "<package-name>"
+  },
+  "terminalExamples": [
+    "npm install <package>",
+    "pip install <package>"
+  ]
+}
