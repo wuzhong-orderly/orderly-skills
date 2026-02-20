@@ -9,6 +9,7 @@ This skill covers the complete architecture for building a production-ready DEX:
 - Project structure and setup
 - Provider hierarchy and configuration
 - **Network configuration (REQUIRED)** - mainnet/testnet and supported chains
+- **TradingView chart setup (REQUIRED for charts)** - charting library files
 - Routing and page components
 - Runtime configuration
 - Build and deployment
@@ -17,6 +18,7 @@ This skill covers the complete architecture for building a production-ready DEX:
 1. `brokerId` - Your Orderly broker ID
 2. `networkId` - Either "mainnet" or "testnet"
 3. Proper wallet connector setup with matching network
+4. TradingView charting library in `public/tradingview/` (for chart functionality)
 
 ---
 
@@ -31,8 +33,14 @@ my-dex/
 │   │   ├── en.json
 │   │   ├── zh.json
 │   │   └── extend/            # Custom translations
-│   └── tradingview/           # TradingView library (optional)
-│       └── charting_library/
+│   ├── pnl/                   # PnL share poster backgrounds
+│   │   ├── poster_bg_1.png
+│   │   └── poster_bg_2.png
+│   └── tradingview/           # TradingView library (REQUIRED for charts)
+│       ├── chart.css          # Custom chart styles
+│       └── charting_library/  # TradingView charting library files
+│           ├── charting_library.js
+│           └── ... (library files)
 ├── src/
 │   ├── main.tsx               # Entry point
 │   ├── App.tsx                # Root component with router
@@ -759,7 +767,96 @@ export function useOrderlyConfig(): OrderlyConfig {
 
 ---
 
-## 8. Wallet Configuration (REQUIRED)
+## 8. TradingView Chart Setup (REQUIRED)
+
+> **CRITICAL**: The TradingView charting library must be manually added to your `public/tradingview/` folder. The SDK does NOT include TradingView files due to licensing. Without these files, the chart will not render.
+
+### Required Files Structure
+
+```
+public/
+└── tradingview/
+    ├── chart.css                    # Optional: custom chart styling
+    └── charting_library/            # REQUIRED: TradingView library
+        ├── charting_library.js      # Main library script
+        ├── charting_library.d.ts
+        ├── bundles/                 # Library bundles
+        ├── datafeed-api.d.ts
+        └── ... (other library files)
+```
+
+### How to Get TradingView Library
+
+1. **Request access** from TradingView: https://www.tradingview.com/HTML5-stock-forex-bitcoin-charting-library/
+2. **Download** the charting library package
+3. **Copy** the `charting_library` folder to your `public/tradingview/` directory
+
+### TradingView Configuration
+
+```tsx
+// In your TradingPage component
+<TradingPage
+  symbol={symbol}
+  tradingViewConfig={{
+    // REQUIRED: Path to the main library script
+    scriptSRC: "/tradingview/charting_library/charting_library.js",
+    // REQUIRED: Path to the library folder (must end with /)
+    library_path: "/tradingview/charting_library/",
+    // Optional: Custom CSS for chart styling
+    customCssUrl: "/tradingview/chart.css",
+    // Optional: Color configuration
+    colorConfig: {
+      upColor: "#26a69a",
+      downColor: "#ef5350",
+    },
+  }}
+/>
+```
+
+### Alternative: Use Without TradingView
+
+If you don't have a TradingView license, you can omit the `tradingViewConfig` prop and the SDK will use a basic chart:
+
+```tsx
+<TradingPage
+  symbol={symbol}
+  onSymbolChange={onSymbolChange}
+  // tradingViewConfig omitted - will use default chart
+/>
+```
+
+### PnL Share Posters
+
+For the share PnL feature, add poster background images:
+
+```
+public/
+└── pnl/
+    ├── poster_bg_1.png
+    ├── poster_bg_2.png
+    └── poster_bg_3.png
+```
+
+Configure in your TradingPage:
+
+```tsx
+<TradingPage
+  symbol={symbol}
+  sharePnLConfig={{
+    backgroundImages: [
+      "/pnl/poster_bg_1.png",
+      "/pnl/poster_bg_2.png",
+    ],
+    color: "rgba(255, 255, 255, 0.98)",
+    profitColor: "rgba(41, 223, 169, 1)",
+    lossColor: "rgba(245, 97, 139, 1)",
+  }}
+/>
+```
+
+---
+
+## 9. Wallet Configuration (REQUIRED)
 
 > **CRITICAL**: Both EVM and Solana wallet configurations are required for a functional DEX. The `evmInitial` config enables MetaMask, WalletConnect, and other EVM wallets. The `solanaInitial` config enables Phantom, Solflare, etc. **You MUST pass both to `WalletConnectorProvider`.**
 
@@ -834,7 +931,7 @@ export function getSolanaWallets(_networkId: NetworkId) {
 
 ---
 
-## 9. Styling Setup
+## 10. Styling Setup
 
 ### tailwind.config.ts
 
@@ -882,7 +979,7 @@ body {
 
 ---
 
-## 10. Vite Configuration
+## 11. Vite Configuration
 
 > **Important**: The wallet connector packages use Node.js built-ins like `Buffer`. You must add polyfills for browser compatibility.
 
@@ -950,7 +1047,7 @@ export default defineConfig({
 
 ---
 
-## 11. High-Level Page Widgets
+## 12. High-Level Page Widgets
 
 ### Available Page Widgets
 
@@ -1005,7 +1102,7 @@ import {
 
 ---
 
-## 12. Custom Layout with Scaffold
+## 13. Custom Layout with Scaffold
 
 ```tsx
 import { 
@@ -1041,7 +1138,7 @@ function CustomLayout({ children }) {
 
 ---
 
-## 13. Environment Variables
+## 14. Environment Variables
 
 ### .env (Build-time)
 
@@ -1069,7 +1166,7 @@ VITE_ENABLE_TRADING_VIEW=true
 
 ---
 
-## 14. Deployment
+## 15. Deployment
 
 ### Build Command
 
@@ -1126,7 +1223,7 @@ server {
 
 ---
 
-## 15. Complete File Examples
+## 16. Complete File Examples
 
 ### index.html
 
