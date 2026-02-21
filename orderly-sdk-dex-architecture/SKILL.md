@@ -131,7 +131,7 @@ npm install @solana/wallet-adapter-base @solana/wallet-adapter-wallets
 
 ### package.json
 
-> **IMPORTANT**: The package.json MUST include both EVM wallet packages (`@web3-onboard/*`) AND Solana wallet packages (`@solana/wallet-adapter-*`). Without these, users cannot connect wallets.
+> **Note**: For custom wallet configuration (e.g., adding WalletConnect), install the underlying wallet packages (`@web3-onboard/*` for EVM, `@solana/wallet-adapter-*` for Solana). The `WalletConnectorProvider` works with defaults if these are not installed — the official templates do not include them as direct dependencies.
 
 ```json
 {
@@ -176,16 +176,23 @@ npm install @solana/wallet-adapter-base @solana/wallet-adapter-wallets
 
 ## 2. Provider Hierarchy
 
-The SDK requires a specific provider nesting order:
+The SDK requires a specific provider nesting order. You only need to set up the outer three — `OrderlyAppProvider` internally wraps your app with several additional providers (theme, tooltip, modal, etc.).
 
 ```
 LocaleProvider (i18n)
 └── WalletConnectorProvider (or Privy)
     └── OrderlyAppProvider
-        └── ModalProvider (from UI)
-            └── TooltipProvider
-                └── Your App
+        ├── (internal) AppConfigProvider
+        ├── (internal) OrderlyThemeProvider
+        ├── (internal) OrderlyConfigProvider (from hooks)
+        ├── (internal) AppStateProvider
+        ├── (internal) UILocaleProvider
+        ├── (internal) TooltipProvider
+        ├── (internal) ModalProvider
+        └── Your App
 ```
+
+> **Note**: `TooltipProvider` and `ModalProvider` are managed internally by `OrderlyAppProvider`. You do **not** need to add them yourself.
 
 ### Main Provider Component
 
@@ -267,9 +274,35 @@ const OrderlyProvider = ({ children }: { children: ReactNode }) => {
 export default OrderlyProvider;
 ```
 
-### Wallet Connector Setup (REQUIRED)
+### Wallet Connector Setup
 
-> **IMPORTANT**: The `WalletConnectorProvider` MUST have both `evmInitial` AND `solanaInitial` configured. Without `evmInitial`, users cannot connect EVM wallets like MetaMask. Without `solanaInitial`, users cannot connect Solana wallets like Phantom.
+> **Note**: Both `solanaInitial` and `evmInitial` props on `WalletConnectorProvider` are **optional**. The provider has sensible defaults and the official templates use it with no props. Pass these props only if you need to customize wallet configuration (e.g., adding WalletConnect with a project ID, or filtering specific wallets).
+
+**Minimal Setup (recommended — uses defaults):**
+
+```tsx
+// src/components/orderlyProvider/walletConnector.tsx
+import { ReactNode } from 'react';
+import { WalletConnectorProvider } from '@orderly.network/wallet-connector';
+import type { NetworkId } from "@orderly.network/types";
+
+interface Props {
+  children: ReactNode;
+  networkId: NetworkId;
+}
+
+const WalletConnector = ({ children, networkId }: Props) => {
+  return (
+    <WalletConnectorProvider>
+      {children}
+    </WalletConnectorProvider>
+  );
+};
+
+export default WalletConnector;
+```
+
+**Custom Setup (explicit wallet configuration):**
 
 ```tsx
 // src/components/orderlyProvider/walletConnector.tsx
@@ -285,10 +318,10 @@ interface Props {
 }
 
 const WalletConnector = ({ children, networkId }: Props) => {
-  // REQUIRED: EVM wallet config for MetaMask, WalletConnect, etc.
+  // Optional: Custom EVM wallet config for MetaMask, WalletConnect, etc.
   const evmInitial = getEvmInitialConfig();
 
-  // REQUIRED: Solana wallet config for Phantom, Solflare, etc.
+  // Optional: Custom Solana wallet config for Phantom, Solflare, etc.
   const solanaInitial = {
     network: networkId === 'mainnet' 
       ? WalletAdapterNetwork.Mainnet 
@@ -298,8 +331,8 @@ const WalletConnector = ({ children, networkId }: Props) => {
 
   return (
     <WalletConnectorProvider
-      solanaInitial={solanaInitial}  // REQUIRED
-      evmInitial={evmInitial}        // REQUIRED for EVM wallet support
+      solanaInitial={solanaInitial}
+      evmInitial={evmInitial}
     >
       {children}
     </WalletConnectorProvider>

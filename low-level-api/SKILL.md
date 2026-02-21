@@ -204,7 +204,7 @@ async function makeAuthenticatedRequest(
 // Example usage:
 // const secretKey = base58ToBytes("DmLpCDU8PMTSXfhW5UxzsYjNsg8r6HxKfLqr4scqcHxb");
 // const result = await makeAuthenticatedRequest(
-//   "https://testnet-api-evm.orderly.org",
+//   "https://testnet-api.orderly.org",
 //   "/v1/client/holding",
 //   "0x...",
 //   secretKey

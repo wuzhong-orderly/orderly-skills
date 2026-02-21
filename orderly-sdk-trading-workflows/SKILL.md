@@ -38,6 +38,15 @@ This skill covers end-to-end trading workflows:
 ```tsx
 import { useAccount, AccountStatusEnum } from "@orderly.network/hooks";
 
+// AccountStatusEnum values:
+// -1: EnableTradingWithoutConnected
+//  0: NotConnected
+//  1: Connected
+//  2: NotSignedIn
+//  3: SignedIn
+//  4: DisabledTrading
+//  5: EnableTrading (fully operational)
+
 function TradingGuard({ children }) {
   const { state, createAccount, createOrderlyKey } = useAccount();
 
@@ -298,8 +307,11 @@ function LimitOrderForm({ symbol }) {
 
 ### Using useOrderEntry (Recommended)
 
+> **Note**: The current `useOrderEntry` API takes a symbol string as the first argument. Side and order type are set via `setValues()` after initialization.
+
 ```tsx
-import { useOrderEntry, OrderSide, OrderType } from "@orderly.network/hooks";
+import { useOrderEntry } from "@orderly.network/hooks";
+import { OrderSide, OrderType } from "@orderly.network/types";
 
 function OrderEntryForm({ symbol }) {
   const {
@@ -310,11 +322,15 @@ function OrderEntryForm({ symbol }) {
     errors,          // Validation errors
     setValues,       // Update form
     helper,          // Helper functions
-  } = useOrderEntry({
-    symbol,
-    side: OrderSide.BUY,
-    order_type: OrderType.LIMIT,
-  });
+  } = useOrderEntry(symbol);
+
+  // Set initial order parameters
+  useEffect(() => {
+    setValues({
+      side: OrderSide.BUY,
+      order_type: OrderType.LIMIT,
+    });
+  }, []);
 
   const handleSubmit = async () => {
     if (Object.keys(errors).length > 0) {
@@ -889,7 +905,7 @@ function ErrorHandler() {
 import { useOrderEntry } from "@orderly.network/hooks";
 
 function OrderForm() {
-  const { errors, submit } = useOrderEntry({ ... });
+  const { errors, submit } = useOrderEntry("PERP_ETH_USDC");
 
   const handleSubmit = async () => {
     // Validation errors

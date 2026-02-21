@@ -77,6 +77,8 @@ The template checks `VITE_HAS_PRIMARY_LOGO` and `VITE_HAS_SECONDARY_LOGO` in `co
 
 The UI uses CSS variables for theming. Edit `app/styles/theme.css` to match your brand.
 
+> **Note**: The dex-creator template uses `app/styles/theme.css`. Other official templates (Vite, Next.js, Remix) use `src/styles/theme.css` instead. Check your project structure to find the correct path.
+
 #### Key Variables
 
 - **Brand Colors**:

@@ -13,16 +13,16 @@ The SDK provides a unified wallet connection layer that abstracts the difference
 
 ## Wallet Connector Package
 
-> **CRITICAL**: The `@orderly.network/wallet-connector` package is a wrapper. You MUST also install the underlying wallet libraries for it to work.
+> **Note**: The `@orderly.network/wallet-connector` package works out of the box with sensible defaults. Both `solanaInitial` and `evmInitial` props are **optional**. If you need custom wallet configuration (e.g., adding WalletConnect with a project ID), you can install and configure the underlying wallet libraries:
 
 ```bash
 # Main connector package
 npm install @orderly.network/wallet-connector
 
-# REQUIRED: EVM wallet packages (for MetaMask, Coinbase, WalletConnect, etc.)
+# Optional: EVM wallet packages (for custom wallet config like WalletConnect)
 npm install @web3-onboard/injected-wallets @web3-onboard/walletconnect
 
-# REQUIRED: Solana wallet packages (for Phantom, Solflare, etc.)
+# Optional: Solana wallet packages (for custom Solana wallet config)
 npm install @solana/wallet-adapter-base @solana/wallet-adapter-wallets
 ```
 
@@ -68,7 +68,33 @@ npm install @solana/wallet-adapter-base @solana/wallet-adapter-wallets
 
 ### 1. WalletConnectorProvider
 
-Wrap your app with the `WalletConnectorProvider`:
+Wrap your app with the `WalletConnectorProvider`. Both `solanaInitial` and `evmInitial` are **optional** props — the provider works with sensible defaults. The official templates use `<WalletConnectorProvider>` with no props. However, you can customize wallet configuration if needed.
+
+**Minimal Setup (uses defaults):**
+
+```tsx
+import { WalletConnectorProvider } from "@orderly.network/wallet-connector";
+import { OrderlyAppProvider } from "@orderly.network/react-app";
+import type { NetworkId } from "@orderly.network/types";
+
+function App() {
+  const networkId: NetworkId = "mainnet";
+  
+  return (
+    <WalletConnectorProvider>
+      <OrderlyAppProvider
+        brokerId="your_broker_id"    // REQUIRED
+        brokerName="Your DEX Name"   // REQUIRED
+        networkId={networkId}         // REQUIRED: "mainnet" or "testnet"
+      >
+        <YourApp />
+      </OrderlyAppProvider>
+    </WalletConnectorProvider>
+  );
+}
+```
+
+**Custom Setup (explicit wallet configuration):**
 
 ```tsx
 import { WalletConnectorProvider } from "@orderly.network/wallet-connector";
@@ -77,13 +103,11 @@ import { OrderlyAppProvider } from "@orderly.network/react-app";
 import type { NetworkId } from "@orderly.network/types";
 
 function App() {
-  // REQUIRED: Set network - "mainnet" for production, "testnet" for development
   const networkId: NetworkId = "mainnet";
   
   return (
     <WalletConnectorProvider
       solanaInitial={{
-        // Solana network MUST match networkId
         network: networkId === "mainnet" 
           ? WalletAdapterNetwork.Mainnet 
           : WalletAdapterNetwork.Devnet,
@@ -247,24 +271,40 @@ await setChain({ chainId: "0x2105" });
 After wallet connection, users need to complete Orderly account setup. The account has several states:
 
 ```
+┌──────────────────────────────────┐
+│  EnableTradingWithoutConnected   │ ← (-1) Special state
+└──────────────────────────────────┘
+
 ┌─────────────────┐
-│  NotConnected   │ ← Wallet not connected
+│  NotConnected   │ ← (0) Wallet not connected
 └────────┬────────┘
          │ connect()
          ▼
 ┌─────────────────┐
-│    Connected    │ ← Wallet connected, no Orderly account
+│    Connected    │ ← (1) Wallet connected, no Orderly account
 └────────┬────────┘
          │ createAccount()
          ▼
 ┌─────────────────┐
-│  NotSignedIn    │ ← Orderly account exists, needs trading key
+│  NotSignedIn    │ ← (2) Orderly account exists, needs trading key
 └────────┬────────┘
          │ createOrderlyKey()
          ▼
 ┌─────────────────┐
-│    SignedIn     │ ← Fully authenticated, can trade
+│    SignedIn     │ ← (3) Authenticated
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│ DisabledTrading │ ← (4) Trading disabled for this account
 └─────────────────┘
+
+┌─────────────────┐
+│  EnableTrading  │ ← (5) Fully operational, can trade
+└─────────────────┘
+```
+
+> **Note**: `AccountStatusEnum` has 7 values (including `EnableTradingWithoutConnected = -1` and `EnableTrading = 5`). In most UI flows you handle the main 4 states (`NotConnected` → `Connected` → `NotSignedIn` → `SignedIn`), but `EnableTrading` is the final operational state.
 ```
 
 ### Using useAccount Hook

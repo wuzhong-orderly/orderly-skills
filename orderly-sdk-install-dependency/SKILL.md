@@ -13,6 +13,8 @@ Use this skill to add Orderly SDK packages to your project. The SDK is modular�
 ## Quick Start (Full DEX)
 
 > **IMPORTANT**: A functional DEX requires BOTH the Orderly packages AND the wallet connector dependencies. The `@orderly.network/wallet-connector` package needs `@web3-onboard/*` packages for EVM wallets and `@solana/wallet-adapter-*` packages for Solana wallets.
+>
+> **Note**: `@orderly.network/hooks` is included as a transitive dependency via `@orderly.network/react-app` — you do not need to install it separately for most DEX projects. Only install it directly if you are using the hooks-only integration path without `react-app`.
 
 ```bash
 # Orderly SDK packages
@@ -64,6 +66,7 @@ Complete, pre-built page components with full functionality.
 | `@orderly.network/affiliate` | Referral/affiliate program page | `AffiliatePage` |
 | `@orderly.network/trading-leaderboard` | Trading competition leaderboard | `LeaderboardPage` |
 | `@orderly.network/trading-rewards` | Trading rewards program page | `TradingRewardsPage` |
+| `@orderly.network/trading-points` | Trading points/merits program page | `TradingPointsPage` |
 
 ```bash
 npm install @orderly.network/trading @orderly.network/portfolio @orderly.network/markets
@@ -84,16 +87,16 @@ Choose **one** wallet connection strategy.
 
 Supports EVM (MetaMask, WalletConnect, Binance, etc.) and Solana (Phantom, Solflare).
 
-> **CRITICAL**: You MUST install the underlying wallet libraries. The `@orderly.network/wallet-connector` package is just a wrapper—it requires the actual wallet packages to function.
+> **Note**: The `@orderly.network/wallet-connector` works with sensible defaults. Installing the underlying wallet packages (`@web3-onboard/*`, `@solana/wallet-adapter-*`) is optional and only needed for custom wallet configuration (e.g., adding WalletConnect with a project ID). The official templates use `<WalletConnectorProvider>` with no props and no extra wallet packages.
 
 ```bash
 # Main connector package
 npm install @orderly.network/wallet-connector
 
-# REQUIRED: EVM wallet packages (for MetaMask, Coinbase, WalletConnect, etc.)
+# Optional: EVM wallet packages (for custom WalletConnect, etc.)
 npm install @web3-onboard/injected-wallets @web3-onboard/walletconnect
 
-# REQUIRED: Solana wallet packages (for Phantom, Solflare, etc.)
+# Optional: Solana wallet packages (for custom Solana wallet config)
 npm install @solana/wallet-adapter-base @solana/wallet-adapter-wallets
 ```
 

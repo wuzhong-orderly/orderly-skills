@@ -30,7 +30,33 @@ pnpm add @orderly.network/hooks
 
 ## Provider Setup (Required)
 
-Before using any hooks, wrap your application with the `OrderlyConfigProvider`:
+There are **two provider options** depending on your integration approach:
+
+### Option A: Full App Provider (Recommended for most DEX projects)
+
+Use `OrderlyAppProvider` from `@orderly.network/react-app`. This wraps `OrderlyConfigProvider` internally and integrates with `WalletConnectorProvider` for wallet support. When using this approach, `@orderly.network/hooks` is included as a transitive dependency — you do not need to install it separately.
+
+```tsx
+import { OrderlyAppProvider } from "@orderly.network/react-app";
+import { WalletConnectorProvider } from "@orderly.network/wallet-connector";
+
+function App() {
+  return (
+    <WalletConnectorProvider>
+      <OrderlyAppProvider
+        brokerId="your_broker_id"
+        networkId="mainnet"
+      >
+        <YourApp />
+      </OrderlyAppProvider>
+    </WalletConnectorProvider>
+  );
+}
+```
+
+### Option B: Hooks-Only Provider (For custom/non-React-app setups)
+
+Use `OrderlyConfigProvider` from `@orderly.network/hooks` directly. This requires manual wallet adapter setup.
 
 ```tsx
 import { OrderlyConfigProvider } from "@orderly.network/hooks";
@@ -405,6 +431,8 @@ const [orders, { refresh, isLoading }] = useOrderStream({
 
 Comprehensive hook for order entry with validation.
 
+> **Note**: The current API takes a symbol string as the first argument. Side and order type are set via `setValues()`. An older deprecated signature `useOrderEntry({ symbol, side, order_type })` may appear in some examples but is exported as `useOrderEntry_deprecated`.
+
 ```tsx
 import { useOrderEntry } from "@orderly.network/hooks";
 
@@ -414,12 +442,18 @@ const {
   maxQty,          // Maximum quantity
   freeCollateral,  // Available collateral
   errors,          // Validation errors
-  setValues,       // Update form values
+  setValues,       // Update form values (side, order_type, price, quantity, etc.)
   // ...
-} = useOrderEntry({
-  symbol: "PERP_ETH_USDC",
+} = useOrderEntry("PERP_ETH_USDC", {
+  // optional config
+});
+
+// Set order parameters via setValues
+setValues({
   side: "BUY",
   order_type: "LIMIT",
+  order_price: "1500",
+  order_quantity: "0.1",
 });
 ```
 
@@ -689,12 +723,13 @@ ws.subscribe("orderbook:PERP_ETH_USDC", (data) => {
 
 #### `useWsStatus`
 
-Monitor WebSocket connection status.
+Monitor WebSocket connection status. Returns a single `WsNetworkStatus` enum value.
 
 ```tsx
-import { useWsStatus } from "@orderly.network/hooks";
+import { useWsStatus, WsNetworkStatus } from "@orderly.network/hooks";
 
-const { connected, reconnecting, error } = useWsStatus();
+const wsStatus = useWsStatus();
+// Returns: WsNetworkStatus.Connected | WsNetworkStatus.Unstable | WsNetworkStatus.Disconnected
 ```
 
 ---
@@ -1024,7 +1059,7 @@ const { data, mutate } = useQuery(endpoint, {
 
 ### 6. Validate Before Submitting Orders
 ```tsx
-const { errors, formattedOrder, submit } = useOrderEntry({...});
+const { errors, formattedOrder, submit } = useOrderEntry("PERP_ETH_USDC");
 if (Object.keys(errors).length === 0) {
   await submit();
 }
@@ -1092,11 +1127,7 @@ import {
 function TradingComponent() {
   const { state } = useAccount();
   const { freeCollateral } = useCollateral();
-  const { submit, errors, setValues, maxQty } = useOrderEntry({
-    symbol: "PERP_ETH_USDC",
-    side: "BUY",
-    order_type: "LIMIT",
-  });
+  const { submit, errors, setValues, maxQty } = useOrderEntry("PERP_ETH_USDC");
 
   const handleTrade = async () => {
     if (state !== AccountState.SignedIn) return;
